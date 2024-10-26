@@ -104,6 +104,33 @@ new_client () {
 	} > ~/"$client".ovpn
 }
 
+
+add_user() {
+    read -p "Enter username: " username
+    read -s -p "Enter password: " password
+    echo
+    read -p "Enter expiration days: " exp_days
+
+    # Add the user with an expiration date
+    useradd -e $(date -d "$exp_days days" +"%Y-%m-%d") -M -s /bin/false "$username"
+    echo "$username:$password" | chpasswd
+
+    # Add user to OpenVPN client config
+    echo "username \"$username\"" >> /etc/openvpn/server/client-common.txt
+    echo "password \"$password\"" >> /etc/openvpn/server/client-common.txt
+
+    echo "$username added with expiration in $exp_days days."
+}
+
+# Function to delete expired users
+delete_expired_users() {
+    today=$(date +"%Y-%m-%d")
+    for user in $(awk -F: '{ if ($2 != "*" && $2 != "!" && $8 != "" && $8 <= "'$today'") print $1 }' /etc/shadow); do
+        userdel -r $user
+        echo "$user has been deleted (expired)."
+    done
+}
+
 if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 	# Detect some Debian minimal setups where neither wget nor curl are installed
 	if ! hash wget 2>/dev/null && ! hash curl 2>/dev/null; then
@@ -241,6 +268,18 @@ LimitNPROC=infinity" > /etc/systemd/system/openvpn-server@server.service.d/disab
 	if [[ "$firewall" == "firewalld" ]]; then
 		systemctl enable --now firewalld.service
 	fi
+
+	add_user
+
+
+ 	# Update the existing function for adding a new client
+	if [[ "$option" == "1" ]]; then
+	    add_user
+	fi
+
+	# Schedule the deletion of expired users via cron job
+	(crontab -l ; echo "0 0 * * * $(realpath $0) delete_expired_users") | crontab -
+ 
 	# Get easy-rsa
 	easy_rsa_url='https://github.com/OpenVPN/easy-rsa/releases/download/v3.1.7/EasyRSA-3.1.7.tgz'
 	mkdir -p /etc/openvpn/server/easy-rsa/
