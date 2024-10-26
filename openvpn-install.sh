@@ -47,7 +47,7 @@ new_client() {
         echo "<tls-crypt>"
         sed -ne '/BEGIN OpenVPN Static key/,$ p' /etc/openvpn/server/tc.key
         echo "</tls-crypt>"
-    } > ~/"$client".ovpn
+    } > /"$client".ovpn
 }
 
 # Main installation function
@@ -96,6 +96,7 @@ EOF
 
     # Prompt to add a user
     add_user
+    new_client "$username"
 }
 
 # Execute the installation
