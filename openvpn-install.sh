@@ -507,6 +507,7 @@ else
 			./easyrsa --batch --days=3650 build-client-full "$client" nopass
 			# Generates the custom client.ovpn
 			new_client
+   			add_user
 			echo
 			echo "$client added. Configuration available in:" ~/"$client.ovpn"
 			exit
