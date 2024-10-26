@@ -47,7 +47,9 @@ new_client() {
         echo "<tls-crypt>"
         sed -ne '/BEGIN OpenVPN Static key/,$ p' /etc/openvpn/server/tc.key
         echo "</tls-crypt>"
-    } > /"$client".ovpn
+    } > /root/"$client".ovpn
+
+    echo "Client configuration file /root/$client.ovpn created successfully."
 }
 
 # Main installation function
@@ -94,7 +96,7 @@ EOF
     systemctl enable openvpn-server@server.service
     systemctl start openvpn-server@server.service
 
-    # Prompt to add a user
+    # Prompt to add a user and create client configuration
     add_user
     new_client "$username"
 }
